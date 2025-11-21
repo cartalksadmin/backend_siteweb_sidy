@@ -18,7 +18,38 @@ const PORT = process.env.PORT || 4000;
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || '*' }));
+
+// CORS configuration
+// Support a single FRONTEND_ORIGIN or a comma-separated FRONTEND_ORIGINS env var.
+// If none provided, default to allowing all origins (development convenience).
+const rawOrigins = process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN || '';
+const allowedOrigins = rawOrigins
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  // handle preflight success status for older browsers
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  origin: (origin, callback) => {
+    // allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    // if no specific origins configured, allow all
+    if (allowedOrigins.length === 0) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS_NOT_ALLOWED'));
+  },
+};
+
+app.use((req, res, next) => {
+  // quick debug header when CORS blocked externally
+  res.setHeader('X-App-Server', 'realtech-backend');
+  next();
+});
+
+app.use(cors(corsOptions));
 
 app.get('/', (req, res) => res.json({ ok: true, message: 'Backend API for Site Web RealTech' }));
 
