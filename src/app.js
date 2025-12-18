@@ -16,6 +16,10 @@ const adminCartsRouter = require('./routes/adminCarts');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// small performance improvements
+const compression = require('compression');
+
+app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
